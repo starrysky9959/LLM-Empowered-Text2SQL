@@ -19,4 +19,6 @@ unset __conda_setup
 module load compilers/gcc/9.3.0 compilers/cuda/12.1 cudnn/8.8.1.3_cuda12.x anaconda/2021.11
 conda activate deepseek
 export PYTHONUNBUFFERED=1
-python main.py
+python police_main1.py
+python police_main2.py
+# python chroma_demo.py

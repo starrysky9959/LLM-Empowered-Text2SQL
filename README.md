@@ -7,7 +7,11 @@
 ## Evaluation on Spider
 
 ```bash
-python evaluation.py --gold ../spider/dev_gold.sql --pred ../../LLM-Empowered-Text2SQL/result.txt --etype all --db ../spider/database/ --table ../spider/tables.json 
+python evaluation.py --gold ../spider/dev_gold.sql --pred ../LLM-Empowered-Text2SQL/result.txt --etype all --db ../spider/database/ --table ../spider/tables.json 
+```
+## 
+```bash
+sbatch -x paraai-n32-h-01-agent-[1-44],paraai-n32-h-01-agent-[48-56],paraai-n32-h-01-agent-[63-100] --gpus=1 ./run.sh 
 ```
 
 ## ClickHouse Datasource
@@ -37,3 +41,25 @@ deepspeed --num_gpus 2 finetune_deepseekcoder.py \
     --report_to "tensorboard" \
     --deepspeed configs/ds_config_zero3.json \
     --bf16 True 
+
+
+# merge
+```bash
+python src/export_model.py \
+    --model_name_or_path ../deepseek-coder-7b-instruct-v1.5 \
+    --adapter_name_or_path ./output_2 \
+    --template deepseekcoder \
+    --finetuning_type lora \
+    --export_dir ./merged_2 \
+    --export_size 10 \
+    --export_legacy_format False
+```
+
+
+python3 evaluation.py \
+    --gold ../spider/dev_gold.sql \
+    --pred ../LLM-Empowered-Text2SQL/041601_galore_dev.txt \
+    --table ../spider/tables.json \
+    --db ../spider/database/ \
+    --etype all 
+    

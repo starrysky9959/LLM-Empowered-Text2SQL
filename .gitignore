@@ -3,3 +3,9 @@ __pycache__/
 *.json
 slurm*.out
 result*
+.env
+*.txt
+cot_bird_dataset/
+cot_dataset/
+public_dataset/
+LLaMA-Factory/
