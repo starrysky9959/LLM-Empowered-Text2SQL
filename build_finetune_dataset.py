@@ -1,13 +1,16 @@
 import json
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # 从.env文件加载环境变量
+
 
 from sql_metadata import Parser
 import sqlalchemy
 import sqlparse
 
 SAMPLE_SIZE = 3
-STEP_1_SYSTEM_PROMPT = """
-You are an experienced and professional database administrator.
-Given [Database Schema] and [Foreign Keys], your task is to identify the [Relevant Tables] to answer the [Question].
+STEP_1_SYSTEM_PROMPT = """You are an experienced and professional database administrator. Given [Database Schema] and [Foreign Keys], your task is to identify the [Relevant Tables] to answer the [Question].
 """.lstrip()
 
 STEP_1_INSTRUCTION_PATTERN = """
@@ -24,9 +27,8 @@ STEP_1_OUTPUT_PATTERN = """
 {tables}
 """.strip()
 
-STEP_2_SYSTEM_PROMPT = """
-Given [Database Schema] and [Foreign Keys], your task is to write a [SQL Query] to answer the [Question].
-[Constraints] Your [SQL Query] should satisfy the following constraints:
+STEP_2_SYSTEM_PROMPT = """You are an experienced and professional database administrator. Given [Database Schema] and [Foreign Keys], your task is to write a [SQL] to answer the [Question].
+[Constraints] Your [SQL] should satisfy the following constraints:
 - In `SELECT <column>`, must only use the column given in the [Database Schema].
 - In `FROM <table>` or `JOIN <table>`, must only use the table given in the [Database Schema].
 - In `JOIN`, must only use the tables and columns in the [Foreign keys].
@@ -43,7 +45,7 @@ STEP_2_INSTRUCTION_PATTERN = """
 {question}
 [Evidence] Some external knowledge about the question.
 {evidence}
-[SQL Query]
+[SQL]
 """.lstrip()
 
 STEP_2_OUTPUT_PATTERN = """
@@ -65,13 +67,20 @@ def format_sql(sql: str):
     return formatted_query
 
 
-def get_table_schema(engine, table_names=None):
+def get_table_schema(engine, revelant_tables=None):
     # 使用inspect获取数据库的元数据
     inspector = sqlalchemy.inspect(engine)
-    if table_names is None:
+    if revelant_tables is None:
         table_names = inspector.get_table_names()
-    schema_str = ""
+    else:
+        table_names = [
+            table
+            for table in inspector.get_table_names()
+            if table.lower() in revelant_tables
+        ]
 
+    schema_str = ""
+    # print("tables :", table_names)
     for table_name in table_names:
         schema_str += f"Table: {table_name}\n"
 
@@ -88,7 +97,7 @@ def get_table_schema(engine, table_names=None):
         foreign_keys = inspector.get_foreign_keys(table_name)
         for foreign_key in foreign_keys:
             schema_str += f"  Foreign Key: {foreign_key['constrained_columns']}, References: {foreign_key['referred_table']}.{foreign_key['referred_columns']}\n"
-        schema_str + "Sample rows:"
+        schema_str += f"Sample rows from {table_name}:\n"
         with engine.connect() as conn:
             result = conn.execute(
                 sqlalchemy.text(f"select * from {table_name} limit {SAMPLE_SIZE}")
@@ -134,7 +143,8 @@ def get_engine(database: dict):
 
 def user_dataset_to_finetune_dataset(
     user_dataset_path: str,
-    output_path: str,
+    finetune_step_1_path: str,
+    finetune_step_2_path: str,
     comment_dataset_path=None,
 ):
     with open(user_dataset_path, "r") as input_file:
@@ -147,6 +157,7 @@ def user_dataset_to_finetune_dataset(
     step_2_dataset = []
     for user_case in user_dataset:
         engine = get_engine(user_case["database"])
+        # print("dbname", user_case["database"])
         instruction, output, relevant_tables = step_1(
             engine,
             user_case["question"],
@@ -177,33 +188,69 @@ def user_dataset_to_finetune_dataset(
             }
         )
 
-    with open(f"{output_path}/step_1.json", "w") as output_file:
+    with open(finetune_step_1_path, "w") as output_file:
         json.dump(step_1_dataset, output_file)
-    with open(f"{output_path}/step_2.json", "w") as output_file:
+    with open(finetune_step_2_path, "w") as output_file:
         json.dump(step_2_dataset, output_file)
 
 
+def add_custom_dataset_to_llama_factory(step_1_path: str, step_2_path: str):
+    config_file_path = "./LLaMA-Factory/data/dataset_info.json"
+
+    # 读取现有的JSON文件
+    with open(config_file_path, "r") as file:
+        data = json.load(file)
+    data["text2sql_step_1"] = {
+        "file_name": step_1_path,
+        "columns": {
+            "prompt": "instruction",
+            "response": "output",
+            "system": "system",
+        },
+    }
+
+    data["text2sql_step_2"] = {
+        "file_name": step_2_path,
+        "columns": {
+            "prompt": "instruction",
+            "response": "output",
+            "system": "system",
+        },
+    }
+
+    # 将更新后的数据写回JSON文件
+    with open(config_file_path, "w") as file:
+        json.dump(data, file)
+
+
+def config_llama_factory_yaml(yaml_file_path: str):
+    import ruamel.yaml
+
+    yaml = ruamel.yaml.YAML()
+
+    yaml.preserve_quotes = True
+
+    with open(yaml_file_path, "r") as file:
+        data = yaml.load(file)
+
+    data["model_name_or_path"] = os.path.abspath(os.getenv("MODEL_PATH"))
+    data["output_dir"] = os.path.abspath(os.getenv("OUTPUT_MODEL_STEP_1_DIR"))
+
+    with open(yaml_file_path, "w") as file:
+        yaml.dump(data, file)
+
+
 if __name__ == "__main__":
-    import argparse
-
-    # 创建解析器
-    parser = argparse.ArgumentParser(description="Process some integers.")
-
-    # 添加参数
-    parser.add_argument(
-        "--dataset_path",
-        type=str,
-        required=True,
-        help="user defined dataset path",
+    step_1_path = os.path.abspath(os.getenv("FINETUNE_DATASET_STEP_1_PATH"))
+    step_2_path = os.path.abspath(os.getenv("FINETUNE_DATASET_STEP_2_PATH"))
+    user_dataset_to_finetune_dataset(
+        os.getenv("USER_DATASET_PATH"),
+        step_1_path,
+        step_2_path,
     )
-    parser.add_argument(
-        "--output_path",
-        type=str,
-        required=True,
-        help="otuput path for finetune dataset",
+    add_custom_dataset_to_llama_factory(
+        step_1_path,
+        step_2_path,
     )
-
-    # 解析参数
-    args = parser.parse_args()
-
-    user_dataset_to_finetune_dataset(args.dataset_path, args.output_path)
+    config_llama_factory_yaml("./text2sql_step_1_lora_sft.yaml")
+    config_llama_factory_yaml("./text2sql_step_2_lora_sft.yaml")

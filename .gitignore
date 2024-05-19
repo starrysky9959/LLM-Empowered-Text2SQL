@@ -9,3 +9,6 @@ cot_bird_dataset/
 cot_dataset/
 public_dataset/
 LLaMA-Factory/
+finetuned_model/
+user_dataset/
+log/
