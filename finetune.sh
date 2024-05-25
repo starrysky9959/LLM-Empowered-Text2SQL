@@ -12,7 +12,7 @@ echo "FINETUNE_DATASET_STEP_2_PATH:${FINETUNE_DATASET_STEP_2_PATH}"
 #!/bin/bash
 
 # 定义要操作的文件夹列表
-folders=("${FINETUNE_DATASET_DIR}" "${OUTPUT_MODEL_DIR}" "${OUTPUT_MODEL_STEP_1_DIR}" "${OUTPUT_MODEL_STEP_1_DIR}")
+folders=("${FINETUNE_DATASET_DIR}" "${OUTPUT_MODEL_DIR}" "${OUTPUT_MODEL_STEP_1_DIR}" "${OUTPUT_MODEL_STEP_1_DIR}" "${EXPORT_MODEL_DIR}")
 
 # 遍历文件夹列表
 for folder in "${folders[@]}"; do
@@ -32,7 +32,12 @@ exit 0
 cd LLaMA-Factory/
 CUDA_VISIBLE_DEVICES=0 llamafactory-cli train ../text2sql_step_1_lora_sft.yaml
 CUDA_VISIBLE_DEVICES=1 llamafactory-cli train ../text2sql_step_2_lora_sft.yaml
-
+CUDA_VISIBLE_DEVICES=0 llamafactory-cli export examples/merge_lora/llama3_lora_sft.yaml
+nohup CUDA_VISIBLE_DEVICES=1 llamafactory-cli train ../text2sql_lora_sft.yaml > ../log/logfile.log 2>&1 &
+export CUDA_VISIBLE_DEVICES=0,1
+nohup accelerate launch \
+    --config_file examples/accelerate/single_config.yaml \
+    src/train.py ../text2sql_lora_sft.yaml > ../log/logfile.log 2>&1 &
 # CUDA_VISIBLE_DEVICES=0 llamafactory-cli chat examples/inference/llama3_lora_sft.yaml
 # CUDA_VISIBLE_DEVICES=0 llamafactory-cli export examples/merge_lora/llama3_lora_sft.yaml
 

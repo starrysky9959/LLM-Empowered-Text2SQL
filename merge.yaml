@@ -1,0 +1,14 @@
+### Note: DO NOT use quantized model or quantization_bit when merging lora adapters
+
+### model
+model_name_or_path: 
+  /home/data2/luzhan/projects/local_models/deepseek-ai/deepseek-coder-6.7b-instruct
+adapter_name_or_path: /home/data2/luzhan/projects/LLM-Empowered-Text2SQL/finetuned_model
+template: /home/data2/luzhan/projects/LLM-Empowered-Text2SQL/deepseekcoder
+finetuning_type: lora
+
+### export
+export_dir: /home/data2/luzhan/projects/LLM-Empowered-Text2SQL/finetuned_model/merged
+export_size: 2
+export_device: cpu
+export_legacy_format: false
