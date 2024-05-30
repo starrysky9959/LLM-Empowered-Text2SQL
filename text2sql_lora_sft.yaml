@@ -1,7 +1,7 @@
 ### model
 model_name_or_path: 
   /home/data2/luzhan/projects/local_models/deepseek-ai/deepseek-coder-6.7b-instruct
-quantization_bit: 8
+quantization_bit: 4
 
 ### method
 stage: sft
@@ -38,3 +38,5 @@ val_size: 0.1
 per_device_eval_batch_size: 1
 evaluation_strategy: steps
 eval_steps: 1000
+
+resume_from_checkpoint : /home/data2/luzhan/projects/LLM-Empowered-Text2SQL/finetuned_model/checkpoint-3500

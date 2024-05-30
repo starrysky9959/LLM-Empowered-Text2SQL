@@ -55,11 +55,25 @@ python src/export_model.py \
     --export_legacy_format False
 ```
 
-
+```bash
 python3 evaluation.py \
     --gold ../spider/dev_gold.sql \
-    --pred ../LLM-Empowered-Text2SQL/041601_galore_dev.txt \
+    --pred ../LLM-Empowered-Text2SQL/public_dataset/bench/spider_dev.txt \
     --table ../spider/tables.json \
     --db ../spider/database/ \
-    --etype all 
-    
+    --etype all > 20240530.log
+```
+
+```bash
+python -m vllm.entrypoints.openai.api_server \
+    --model facebook/opt-125m
+python -m vllm.entrypoints.openai.api_server \
+    --served-model-name deepseek \
+    --model /home/data2/luzhan/projects/LLM-Empowered-Text2SQL/finetuned_model/merged \
+    --max-model-len 8196 \
+    --gpu-memory-utilization 0.90 \
+    --tensor-parallel-size 2 \
+    --disable-log-requests
+    # --enable-lora \
+    # --lora-modules sql-lora=/home/data2/luzhan/projects/LLM-Empowered-Text2SQL/finetuned_model/merged
+```

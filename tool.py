@@ -3,7 +3,7 @@ import sqlalchemy
 import sqlparse
 
 
-SAMPLE_SIZE = 3
+SAMPLE_SIZE = 2
 STEP_1_SYSTEM_PROMPT = """You are an experienced and professional database administrator. Given [Database Schema] and [Foreign Keys], your task is to identify the [Relevant Tables] to answer the [Question].
 """.lstrip()
 
@@ -46,6 +46,26 @@ STEP_2_OUTPUT_PATTERN = """
 {sql}
 """.strip()
 
+PREPROCESS_SYSTEM_PROMPT = """You are an experienced and professional database administrator. Your task is to determine whether the [Question] is revevant to the given database [Schema]. In the [Schema], each table consists of several columns and each line describes the name and type of the column.
+""".lstrip()
+PREPROCESS_SYSTEM_INSTRUCTION_PATTERN = """
+[Schema]
+{schema}
+[Question]
+{question}
+
+Attention please, Your answer can only be "yes" or "no".
+""".lstrip()
+
+
+def proprocess(engine, question: str):
+    schema_str = get_table_schema(engine, None)
+    instruction = PREPROCESS_SYSTEM_INSTRUCTION_PATTERN.format(
+        schema=schema_str, question=question
+    )
+
+    return instruction
+
 
 def format_sql(sql: str):
     if sql[-1] != ";":
@@ -64,6 +84,15 @@ def format_sql(sql: str):
 def get_relevant_tables(sql: str):
     relevant_tables = [table.lower() for table in Parser(sql).tables]
     return relevant_tables
+
+
+def get_tables_in_database(engine):
+    """
+    lowercase
+    """
+    inspector = sqlalchemy.inspect(engine)
+    table_names = [table.lower() for table in inspector.get_table_names()]
+    return table_names
 
 
 def get_table_schema(engine, revelant_tables=None):
