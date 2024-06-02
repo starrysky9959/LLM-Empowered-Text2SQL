@@ -167,9 +167,20 @@ def step_2(engine, relevant_tables: list, question: str, evidence: str, sql=None
 
 def get_engine(database: dict):
     db_type = database["type"]
-    url = database["url"]
+
     if db_type == "sqlite":
+        url = database["url"]
         engine = sqlalchemy.create_engine(f"sqlite:///{url}")
+    elif db_type == "mysql":
+        username = database["username"]
+        password = database["password"]
+        host = database["host"]
+        port = database["port"]
+        dbname = database["dbname"]
+        
+        engine = sqlalchemy.create_engine(
+            f"mysql+pymysql://{username}:{password}@{host}/{dbname}"
+        )
     else:
         assert False
     return engine

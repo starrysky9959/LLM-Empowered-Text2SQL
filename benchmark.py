@@ -39,9 +39,9 @@ client = OpenAI(
 )
 
 
-def predict(database_type, url, question, evidence, temperature):
+def predict(database_info: dict, question, evidence, temperature):
     try:
-        engine = tool.get_engine({"type": database_type, "url": url})
+        engine = tool.get_engine(database_info)
         table_names = tool.get_tables_in_database(engine)
     except Exception as e:
         print(e)
@@ -128,8 +128,7 @@ def worker(case):
     # print("type,", dataset)
 
     sql = predict(
-        case["database"]["type"],
-        case["database"]["url"],
+        case["database"],
         case["question"],
         case["evidence"],
         0,
@@ -138,12 +137,29 @@ def worker(case):
     return sql
 
 
-if __name__ == "__main__":
+def single_test():
+    db_info = {
+        "type": "mysql",
+        "username": "root",
+        "password": "root",
+        "host": "127.0.0.1",
+        "port": "3306",
+        "dbname": "text2sql",
+    }
+    sql = predict(db_info, "查询今天青岛市的中断用户数", "中断用户数=不同的网关SN数量。今天是2024年6月2日", 0)
+    print(sql)
+
+
+def batch_test():
     with open("./public_dataset/raw/spider_dev.json", "r") as input_file:
         dataset = json.load(input_file)
     with multiprocessing.Pool(processes=30) as pool:
         # 使用map方法将任务分配给进程池
         results = pool.map(worker, dataset[:])
-    with open("./public_dataset/bench/spider_dev.txt", "w") as output_file:
+    with open("./public_dataset/bench/spider_dev_quant4bit.txt", "w") as output_file:
         for sql in results:
             output_file.write(sql + "\n")
+
+
+if __name__ == "__main__":
+    single_test()

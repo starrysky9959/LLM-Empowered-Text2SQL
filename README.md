@@ -58,10 +58,10 @@ python src/export_model.py \
 ```bash
 python3 evaluation.py \
     --gold ../spider/dev_gold.sql \
-    --pred ../LLM-Empowered-Text2SQL/public_dataset/bench/spider_dev.txt \
+    --pred ../LLM-Empowered-Text2SQL/public_dataset/bench/spider_dev_quant4bit.txt \
     --table ../spider/tables.json \
     --db ../spider/database/ \
-    --etype all > 20240530.log
+    --etype all > 20240530_quant4bit.log
 ```
 
 ```bash
@@ -74,6 +74,7 @@ python -m vllm.entrypoints.openai.api_server \
     --gpu-memory-utilization 0.90 \
     --tensor-parallel-size 2 \
     --disable-log-requests
+# --quantization awq \
     # --enable-lora \
     # --lora-modules sql-lora=/home/data2/luzhan/projects/LLM-Empowered-Text2SQL/finetuned_model/merged
 ```

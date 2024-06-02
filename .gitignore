@@ -6,6 +6,7 @@ result*
 .env
 *.txt
 cot_bird_dataset/
+*_dataset/
 cot_dataset/
 public_dataset/
 LLaMA-Factory/
