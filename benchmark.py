@@ -124,17 +124,22 @@ def predict(database_info: dict, question, evidence, temperature):
 
 
 def worker(case):
-    # print(f"dataset subset size:{len(dataset)}")
-    # print("type,", dataset)
-
-    sql = predict(
+    # print("case", case)
+    success, sql_or_error_message = tool.text2sql(
+        client,
+        args.model,
+        (
+            [int(id.strip()) for id in args.stop_token_ids.split(",") if id.strip()]
+            if args.stop_token_ids
+            else []
+        ),
         case["database"],
         case["question"],
         case["evidence"],
         0,
     )
-    print(sql)
-    return sql
+    print(sql_or_error_message)
+    return sql_or_error_message
 
 
 def single_test():
@@ -146,20 +151,26 @@ def single_test():
         "port": "3306",
         "dbname": "text2sql",
     }
-    sql = predict(db_info, "查询今天青岛市的中断用户数", "中断用户数=不同的网关SN数量。今天是2024年6月2日", 0)
+    sql = predict(
+        db_info,
+        "查询今天青岛市的中断用户数",
+        "中断用户数=不同的网关SN数量。今天是2024年6月3日",
+        0,
+    )
     print(sql)
 
 
 def batch_test():
-    with open("./public_dataset/raw/spider_dev.json", "r") as input_file:
+    with open("./public_dataset/raw/spider_test.json", "r") as input_file:
         dataset = json.load(input_file)
     with multiprocessing.Pool(processes=30) as pool:
         # 使用map方法将任务分配给进程池
         results = pool.map(worker, dataset[:])
-    with open("./public_dataset/bench/spider_dev_quant4bit.txt", "w") as output_file:
+    with open("./public_dataset/bench/spider_test.txt", "w") as output_file:
         for sql in results:
             output_file.write(sql + "\n")
 
 
 if __name__ == "__main__":
-    single_test()
+    # single_test()
+    batch_test()

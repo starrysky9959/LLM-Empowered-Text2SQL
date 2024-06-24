@@ -13,3 +13,4 @@ LLaMA-Factory/
 finetuned_model/
 user_dataset/
 log/
+*.log

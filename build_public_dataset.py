@@ -28,30 +28,30 @@ def build(db_path_format: str, dataset_path: str, type: str, output_path):
 
 
 dataset_metadata = [
-    {
-        "db_path_format": "../spider/database/{db_name}/{db_name}.sqlite",
-        "dataset_path": "../spider/train_spider_all.json",
-        "type": "spider",
-        "output_path": "public_dataset/raw/spider_train.json",
-    },
-    {
-        "db_path_format": "../spider/database/{db_name}/{db_name}.sqlite",
-        "dataset_path": "../spider/dev.json",
-        "type": "spider",
-        "output_path": "public_dataset/raw/spider_dev.json",
-    },
-    {
-        "db_path_format": "../spider/test_database/{db_name}/{db_name}.sqlite",
-        "dataset_path": "../spider/test_data/dev.json",
-        "type": "spider",
-        "output_path": "public_dataset/raw/spider_test.json",
-    },
-    {
-        "db_path_format": "../bird_bench/train/train_databases/{db_name}/{db_name}.sqlite",
-        "dataset_path": "../bird_bench/train/train.json",
-        "type": "bird",
-        "output_path": "public_dataset/raw/bird_train.json",
-    },
+    # {
+    #     "db_path_format": "../spider/database/{db_name}/{db_name}.sqlite",
+    #     "dataset_path": "../spider/train_spider_all.json",
+    #     "type": "spider",
+    #     "output_path": "public_dataset/raw/spider_train.json",
+    # },
+    # {
+    #     "db_path_format": "../spider/database/{db_name}/{db_name}.sqlite",
+    #     "dataset_path": "../spider/dev.json",
+    #     "type": "spider",
+    #     "output_path": "public_dataset/raw/spider_dev.json",
+    # },
+    # {
+    #     "db_path_format": "../spider/test_database/{db_name}/{db_name}.sqlite",
+    #     "dataset_path": "../spider/test_data/dev.json",
+    #     "type": "spider",
+    #     "output_path": "public_dataset/raw/spider_test.json",
+    # },
+    # {
+    #     "db_path_format": "../bird_bench/train/train_databases/{db_name}/{db_name}.sqlite",
+    #     "dataset_path": "../bird_bench/train/train.json",
+    #     "type": "bird",
+    #     "output_path": "public_dataset/raw/bird_train.json",
+    # },
     {
         "db_path_format": "../bird_bench/dev/dev_databases/{db_name}/{db_name}.sqlite",
         "dataset_path": "../bird_bench/dev/dev.json",

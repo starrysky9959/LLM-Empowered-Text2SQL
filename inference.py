@@ -39,123 +39,32 @@ client = OpenAI(
 
 
 def predict(database_type, url, question, evidence, temperature):
-    try:
-        engine = tool.get_engine({"type": database_type, "url": url})
-        table_names = tool.get_tables_in_database(engine)
-    except Exception as e:
-        print(e)
-        return "无法连接到数据库", ""
-    print("database_type", database_type)
-    print("url", url)
-    print("question", question)
-    print("evidence", evidence)
-    print("temperature", temperature)
-    # try:
-    #     instruction = tool.proprocess(engine, question)
-
-    #     response = client.chat.completions.create(
-    #         model="deepseek",
-    #         messages=[
-    #             {"role": "system", "content": tool.PREPROCESS_SYSTEM_PROMPT},
-    #             {"role": "user", "content": instruction},
-    #         ],
-    #         max_tokens=1024,
-    #         temperature=0,
-    #         stream=False,
-    #         extra_body={
-    #             # "repetition_penalty": 1,
-    #             "stop_token_ids": (
-    #                 [
-    #                     int(id.strip())
-    #                     for id in args.stop_token_ids.split(",")
-    #                     if id.strip()
-    #                 ]
-    #                 if args.stop_token_ids
-    #                 else []
-    #             ),
-    #         },
-    #     )
-    # except Exception as e:
-    #     print(e)
-    #     return "执行出错，请检查您的数据库连接设置是否正确", ""
-    # print(instruction)
-    # print(response.choices[0].message.content)
-    # answer = response.choices[0].message.content.strip().lower()
-    # print("preprocess answer:", answer)
-    # if answer == "no":
-    #     return "您的提问似乎与该数据库无关，无法进行回答", ""
-    instruction = tool.step_2(engine, None, question, evidence)
-    print(instruction)
-    # tool.get_relevant_tables()
-
-    # Convert chat history to OpenAI format
-    history_openai_format = [
-        {"role": "system", "content": tool.STEP_2_SYSTEM_PROMPT},
-        {"role": "user", "content": instruction},
-    ]
-    print(history_openai_format)
-    # Create a chat completion request and send it to the API server
-    response = client.chat.completions.create(
-        model=args.model,  # Model name to use
-        messages=history_openai_format,  # Chat history
-        temperature=temperature,  # Temperature for text generation
-        stream=False,  # Stream response
-        extra_body={
-            # "repetition_penalty": 1,
-            "add_generation_prompt": True,
-            "stop_token_ids": (
-                [int(id.strip()) for id in args.stop_token_ids.split(",") if id.strip()]
-                if args.stop_token_ids
-                else []
-            ),
+    success, sql_or_error_message = tool.text2sql(
+        client,
+        args.model,
+        (
+            [int(id.strip()) for id in args.stop_token_ids.split(",") if id.strip()]
+            if args.stop_token_ids
+            else []
+        ),
+        {
+            "type": "mysql",
+            "username": "",
+            "password": "",
+            "host": "",
+            "port": 3306,
+            "dbname": "",
         },
+        question,
+        evidence,
+        temperature,
     )
-
-    # Read and return generated text from response stream
-    raw_sql = response.choices[0].message.content
-    relevant_tables = tool.get_relevant_tables(raw_sql)
-
-    if not set(relevant_tables).issubset(set(table_names)):
-        return (
-            "您的提问似乎与该数据库中的表无关或者存在难以判别的歧义，暂时无法进行回答。请修改数据库设置或问题，补充额外信息。",
-            "",
+    if success:
+        return sql_or_error_message, sqlparse.format(
+            sql_or_error_message, reindent=True, keyword_case="upper"
         )
-
-    # for chunk in stream:
-    #     raw_sql += chunk.choices[0].delta.content or ""
-    # yield raw_sql
-    print("raw_sql", raw_sql)
-
-    instruction = tool.step_2(engine, relevant_tables, question, evidence)
-    print(instruction)
-
-    history_openai_format = [
-        {"role": "system", "content": tool.STEP_2_SYSTEM_PROMPT},
-        {"role": "user", "content": instruction},
-    ]
-    print(history_openai_format)
-    # Create a chat completion request and send it to the API server
-    response = client.chat.completions.create(
-        model=args.model,  # Model name to use
-        messages=history_openai_format,  # Chat history
-        temperature=temperature,  # Temperature for text generation
-        stream=False,  # Stream response
-        extra_body={
-            "repetition_penalty": 1,
-            "stop_token_ids": (
-                [int(id.strip()) for id in args.stop_token_ids.split(",") if id.strip()]
-                if args.stop_token_ids
-                else []
-            ),
-        },
-    )
-
-    # Read and return generated text from response stream
-    answer = response.choices[0].message.content
-    # for chunk in stream:
-    #     answer += chunk.choices[0].delta.content or ""
-    # yield answer, ""
-    return answer, sqlparse.format(answer, reindent=True, keyword_case="upper")
+    else:
+        return sql_or_error_message, ""
 
 
 examples = [
@@ -180,13 +89,13 @@ examples = [
     [
         "sqlite",
         "/home/data2/luzhan/projects/police_data/police.db",
-        "找出2024-04-01到2024-04-30期间有航班，铁路或者旅馆住宿任一记录的在逃人员",
+        "找出2024-04-01到2024-04-30期间有航班, 铁路或者旅馆住宿任一记录的在逃人员",
         "",
     ],
     [
         "sqlite",
         "/home/data2/luzhan/projects/police_data/police.db",
-        "分组统计不同品牌的小型汽车的数量，按照降序排列，并且要求车辆所有人的年龄在20到30岁之间",
+        "分组统计不同品牌的小型汽车的数量, 按照降序排列, 并且要求车辆所有人的年龄在20到30岁之间",
         "今年是2024年",
     ],
     [
