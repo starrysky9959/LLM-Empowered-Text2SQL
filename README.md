@@ -76,11 +76,13 @@ python -m vllm.entrypoints.openai.api_server \
     --model facebook/opt-125m
 python -m vllm.entrypoints.openai.api_server \
     --served-model-name deepseek \
-    --model /home/data2/luzhan/projects/LLM-Empowered-Text2SQL/finetuned_model/merged \
+    --model /home/data2/luzhan/projects/local_models/Qwen2-7B-Instruct \
     --max-model-len 16384 \
     --gpu-memory-utilization 0.90 \
     --tensor-parallel-size 2 \
-    --disable-log-requests
+    --port 8001
+    # --disable-log-requests \
+
 # --quantization awq \
     # --enable-lora \
     # --lora-modules sql-lora=/home/data2/luzhan/projects/LLM-Empowered-Text2SQL/finetuned_model/merged

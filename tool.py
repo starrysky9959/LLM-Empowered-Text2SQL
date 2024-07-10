@@ -7,50 +7,6 @@ import logging
 import networkx
 
 
-class ColumnSchema:
-    def __init__(
-        self, column_name: str, column_description: str = None, value: str = None
-    ):
-        self.column_name = column_name
-        self.column_description = column_description
-        self.sample_values = set()
-        if value is not None:
-            self.sample_values.add(value)
-
-    def add_sample_value(self, value: Set[str]):
-        self.sample_values.update(value)
-
-    def __hash__(self):
-        return hash(self.column_name)
-
-    def __eq__(self, other):
-        if isinstance(other, ColumnSchema):
-            return self.column_name == other.column_name
-        return False
-
-    def __repr__(self):
-        return f"Column(column_name={self.column_name},\n column_description={self.column_description},\n sample_values={self.sample_values})"
-
-
-class TableSchema:
-    def __init__(self, table_name=None):
-        self.table_name = table_name
-        # <column_name, ColumnSchema>
-        self.columns = {}
-
-    def add_column(self, column: ColumnSchema):
-        if isinstance(column, ColumnSchema):
-            if column.column_name in self.columns:
-                self.columns[column.column_name].add_sample_value(column.sample_values)
-            else:
-                self.columns[column.column_name] = column
-        else:
-            raise ValueError("column must be an instance of ColumnSchema")
-
-    def __repr__(self):
-        return f"Table(table_name={self.table_name}, columns={"\n".join(self.columns)})"
-
-
 logging.basicConfig(
     level=logging.DEBUG,  # 设置日志级别为 DEBUG
     format="%(asctime)s - %(levelname)s - %(message)s",  # 设置日志格式

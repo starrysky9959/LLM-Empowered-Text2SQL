@@ -1,11 +1,11 @@
-from typing import List, Set, Tuple
+from typing import Dict, List, Set, Tuple
 from schema import ColumnSchema, TableSchema
 from collections import defaultdict
 from pymilvus import MilvusClient, utility, connections, db, model
 
 embedding_fn = model.dense.SentenceTransformerEmbeddingFunction(
     model_name="all-MiniLM-L6-v2",  # Specify the model name
-    device="cuda:0",  # Specify the device to use, e.g., 'cpu' or 'cuda:0'
+    device="cuda:1",  # Specify the device to use, e.g., 'cpu' or 'cuda:0'
     trust_remote_code=True,
     local_files_only=True,
 )
@@ -40,24 +40,14 @@ class RAGHandler:
         )
         return dict(schema)
 
-    def embedding_queries(self):
-        return embedding_fn.encode_documents(
-            [
-                "full name",
-                "driver",
-                "delivered",
-                "most shipments",
-                "least populated city",
-                "Min(population)",
-                "first_name",
-                "last_name",
-                "driver_id",
-                "Max(Count(ship_id))",
-            ]
-        )
+    def embedding_queries(self, words: List[str]):
+        return embedding_fn.encode_documents(words)
 
     def search_column_schema(
-        self, collection_name: str, query_emdbeddings: List[List[float]], schema
+        self,
+        collection_name: str,
+        query_emdbeddings: List[List[float]],
+        schema: Dict[str, TableSchema],
     ):
         res = self.client.load_collection(collection_name=collection_name)
         res = self.client.get_load_state(collection_name=collection_name)
@@ -71,16 +61,19 @@ class RAGHandler:
             anns_field="column_name_vector",
         )
         # parse_table_column_from_result(res)
-        print(res)
+        # print(res)
         for result_set in res:
             for single_result in result_set:
                 table_name = single_result["entity"]["table_name"]
-
+                schema[table_name].table_name = table_name
                 schema[table_name].add_column(
                     ColumnSchema(
-                        single_result["entity"]["column_name"],
-                        single_result["entity"]["column_description"],
-                        None,
+                        column_name=single_result["entity"]["column_name"].strip(),
+                        column_type=None,
+                        column_description=single_result["entity"][
+                            "column_description"
+                        ],
+                        value=None,
                     )
                 )
 
@@ -102,15 +95,16 @@ class RAGHandler:
             search_params={"metric_type": "COSINE", "params": {}},
             anns_field="column_value_vector",
         )
-        print(res)
+        # print(res)
         for result_set in res:
             for single_result in result_set:
                 table_name = single_result["entity"]["table_name"]
-
+                schema[table_name].table_name = table_name
                 schema[table_name].add_column(
                     ColumnSchema(
-                        single_result["entity"]["column_name"],
-                        None,
-                        single_result["entity"]["column_value"],
+                        column_name=single_result["entity"]["column_name"].strip(),
+                        column_type=None,
+                        column_description=None,
+                        value=single_result["entity"]["column_value"],
                     )
                 )

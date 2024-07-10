@@ -241,7 +241,9 @@ import pandas as pd
 df_train = pd.read_csv("./public_dataset/rag/bird_train.csv")
 df_dev = pd.read_csv("./public_dataset/rag/bird_dev.csv")
 df = pd.concat([df_train, df_dev], ignore_index=True)
-df = df.apply(lambda x: x.fillna(""))
+df = df.apply(lambda x: x.fillna("")).apply(
+    lambda x: x.strip() if isinstance(x, str) else x
+)
 
 # prepare milvus client and database
 conn = connections.connect(host="127.0.0.1", port=19530)
@@ -252,48 +254,17 @@ db.using_database(db_name_milvus)
 client = MilvusClient(uri="http://localhost:19530", db_name=db_name_milvus)
 
 
-ignore = True
+# ignore = False
 for db_name, db_path in database_info:
-    if db_name == "codebase_comments":
-        ignore = False
-    if ignore:
+    if db_name != "student_club":
         continue
+
     db_info = {
         "type": "sqlite",
         "url": db_path,
     }
     db_engine = tool.get_engine(db_info)
 
-    # build_table_schema(client, db_engine, db_name)
-    # build_column_schema(client, df[df["database_name"] == db_name], db_name)
-    # build_column_value(client, db_engine, db_name)
-    res = client.load_collection(
-        collection_name="shipping_column_schema",
-    )
-    res = client.get_load_state(collection_name="shipping_column_schema")
-
-    print(res)
-    res = client.search(
-        collection_name="shipping_column_schema",
-        data=embedding_fn.encode_documents(
-            [
-                "full name",
-                "driver",
-                "delivered",
-                "most shipments",
-                "least populated city",
-                "Min(population)",
-                "first_name",
-                "last_name",
-                "driver_id",
-                "Max(Count(ship_id))",
-            ]
-        ),
-        limit=3,
-        output_fields=["table_name", "column_name"],
-        search_params={"metric_type": "COSINE", "params": {}},
-        anns_field="column_name_vector",
-    )
-    res = json.dumps(res, indent=4)
-    print(res)
-    break
+    build_table_schema(client, db_engine, db_name)
+    build_column_schema(client, df[df["database_name"] == db_name], db_name)
+    build_column_value(client, db_engine, db_name)

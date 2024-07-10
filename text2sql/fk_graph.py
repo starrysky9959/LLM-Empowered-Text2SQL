@@ -16,18 +16,32 @@ class ForeignKeyGraph:
             for foreign_key in foreign_keys:
                 ref_table = foreign_key["referred_table"]
                 G.add_edge(table_name, ref_table)
+
+                # WARNNING!!!!!
+                # ill-formed foreign key name in bird dataset
+                if ref_table not in table_names:
+                    for tmp_table_name in table_names:
+                        if tmp_table_name.lower() == ref_table.lower():
+                            ref_table = tmp_table_name
+                            break
+                        
                 G.add_edge(ref_table, table_name)
+                # print("fk")
+                # print(table_name)
+                # print(ref_table)
+                
+                
+                
         return G
 
     def one_hop(self, table_names):
-        results = set()
+        results = set(table_names)
         for table_name in table_names:
             if table_name in self.graph:
                 neighbors = set(self.graph.neighbors(table_name))
-                neighbors.insert(0, table_name)  # 将本身插入到结果的最前面
-                results[table_name] = neighbors
+                results.update(neighbors)
             else:
-                results[table_name] = [table_name] if table_name in self.graph else []
+                assert False
         return results
 
     def two_hop(self, table_names):
